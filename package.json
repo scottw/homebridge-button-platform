@@ -4,8 +4,8 @@
   "description": "A Homebridge platform plugin that creates virtual buttons that can be triggered using HTTP requests from real buttons like Flic or an Elgato Streamdeck.",
   "main": "index.js",
   "engines": {
-    "homebridge": "^1.3.8",
-    "node": "^16.13.0"
+    "homebridge": "^1.6.0",
+    "node": ">=18"
   },
   "scripts": {
     "format": "prettier --write **/*.js",
@@ -29,6 +29,7 @@
     "flic2",
     "streamdeck",
     "elgato-streamdeck",
+    "shelley",
     "button",
     "http",
     "statelessprogrammableswitch"
@@ -36,16 +37,16 @@
   "author": "Avi Miller <me@dje.li>",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/Djelibeybi/homebridge-button-platform/issues"
+    "url": "https://github.com/scottw/homebridge-button-platform/issues"
   },
   "homepage": "https://github.com/Djelibeybi/homebridge-button-platform#readme",
   "dependencies": {
-    "express": "^4.17.1",
-    "express-validator": "^6.13.0",
-    "helmet": "^5.0.2",
-    "homebridge-lib": "^5.1.19"
+    "express": "^4.21.1",
+    "express-validator": "^7.2.1",
+    "helmet": "^7.1.0",
+    "homebridge-lib": "^7.0.23"
   },
   "devDependencies": {
-    "prettier": "^2.5.0"
+    "prettier": "^3.3.3"
   }
 }
