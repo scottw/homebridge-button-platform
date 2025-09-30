@@ -38,7 +38,7 @@ export class ButtonPlatform implements DynamicPlatformPlugin {
   ) {
     this.Service = this.api.hap.Service;
     this.Characteristic = this.api.hap.Characteristic;
-    
+
     this.port = config.port || 3001;
     this.buttons = config.buttons || [];
 
@@ -110,6 +110,7 @@ export class ButtonPlatform implements DynamicPlatformPlugin {
     });
 
     // Error handler
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     this.app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
       res.status(500).send('Server error.');
       this.log.error(err.stack || String(err));
