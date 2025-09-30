@@ -1,0 +1,26 @@
+{
+  "bridge": {
+    "name": "Homebridge Dev",
+    "username": "0E:54:8A:B2:C3:D4",
+    "port": 51826,
+    "pin": "123-45-678"
+  },
+  "accessories": [],
+  "platforms": [
+    {
+      "name": "Config",
+      "port": 8581,
+      "platform": "config"
+    },
+    {
+      "name": "Button Platform",
+      "port": 3001,
+      "buttons": [
+        "Test Button",
+        "Living Room Button",
+        "Bedroom Button"
+      ],
+      "platform": "button-platform"
+    }
+  ]
+}

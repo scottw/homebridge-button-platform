@@ -2,6 +2,14 @@
 
 > This private fork is not meant for public use. Use at your own risk.
 
+## Note from the new maintainer
+
+> This Homebridge plugin is copied from `homebridge-button-platform`
+> which is no longer maintained. This new version will run under Node
+> v22 and uses the newer Homebridge APIs.
+
+## Original README content
+
 This Homebridge platform plugin creates virtual buttons that can be triggered
 using HTTP requests. It was originally created to provide HomeKit support for
 [Flic smart buttons](https://flic.io/) before the Flic Hub LR got native HomeKit
