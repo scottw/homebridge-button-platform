@@ -1,6 +1,6 @@
 # Button Platform for Homebridge
 
-> **ARCHIVED** This plugin is no longer updated.
+> This private fork is not meant for public use. Use at your own risk.
 
 This Homebridge platform plugin creates virtual buttons that can be triggered
 using HTTP requests. It was originally created to provide HomeKit support for
