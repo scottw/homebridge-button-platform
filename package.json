@@ -1,5 +1,5 @@
 {
-  "name": "homebridge-button-platform-22+",
+  "name": "homebridge-button-platform-22",
   "version": "1.6.0",
   "description": "A Homebridge platform plugin for Node 22+ that creates virtual buttons that can be triggered using HTTP requests from real buttons like Shelley, Flic or an Elgato Streamdeck.",
   "main": "index.js",
