@@ -1,7 +1,7 @@
 {
   "name": "homebridge-button-platform-22",
   "displayName": "Button Platform",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "A Homebridge platform plugin (for Node v22+) to create virtual buttons that respond to HTTP requests from things like Shelley, Flic or an Elgato Stream Deck",
   "license": "Apache-2.0",
   "keywords": [

@@ -107,6 +107,7 @@ export class ButtonPlatform implements DynamicPlatformPlugin {
     this.app.use((req: Request, res: Response) => {
       res.status(404).send('Button not found.');
       this.log.warn('Received event for unconfigured Button path: %s', req.originalUrl);
+      this.log.warn('  from: %s (%s %s)', req.socket.remoteAddress, req.method, req.headers['user-agent'])
     });
 
     // Error handler
