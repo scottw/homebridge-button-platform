@@ -2,165 +2,97 @@
 
 > This private fork is not meant for public use. Use at your own risk.
 
-## Note from the new maintainer
+A Homebridge platform plugin that creates virtual HomeKit buttons (stateless
+programmable switches) triggered by HTTP requests. Anything that can send an
+HTTP request works: Shelly devices, an Elgato Stream Deck, `curl`, and so on.
 
-> This Homebridge plugin is copied from `homebridge-button-platform`
-> which is no longer maintained. This new version will run under Node
-> v22 and uses the newer Homebridge APIs.
+It is a Node 22+ rewrite of [`homebridge-button-platform`](https://github.com/djelibeybi/homebridge-button-platform)
+by Avi Miller, which is no longer maintained.
 
-## Original README content
+**This plugin requires a HomeKit [home hub](https://support.apple.com/en-us/102557)**
+(HomePod, Apple TV or iPad) to run automations triggered by button events.
 
-This Homebridge platform plugin creates virtual buttons that can be triggered
-using HTTP requests. It was originally created to provide HomeKit support for
-[Flic smart buttons](https://flic.io/) before the Flic Hub LR got native HomeKit
-support but can be leveraged by anything that can send HTTP requests.
-
-> **Flic Hub LR now supports HomeKit**: Flic released a firmware update for the
-Flic Hub LR on 2 December 2020 which included native HomeKit support.
-Visit <https://flic.io/homekit> for instructions on how to configure native
-HomeKit access.
-
-**This plugin requires a working home hub.**
-
-Before you install, ensure you have [setup a HomePod, HomePod mini, Apple TV or
-iPad as a home hub](https://support.apple.com/en-au/HT207057) for HomeKit. A
-home hub is required to run automations triggered by the button events generated
-by this plugin.
+> **Flic support is deprecated.** The Flic-specific battery reporting
+> (`button-battery-level` header) will be removed after 2026-12-31. Flic 2
+> buttons on a Flic Hub LR can be added to HomeKit directly; see
+> <https://flic.io/homekit>. Plain HTTP requests from a Flic hub will keep
+> working like any other HTTP client.
 
 ## Install
 
-The simplest method to install and configure this plugin is via
-[`homebridge-config-ui-x`](https://www.npmjs.com/package/homebridge-config-ui-x).
-
-To install manually, run the following command in your Homebridge directory.
-Depending on how you installed Homebridge, you may need to add the `-g` and/or
-the `--unsafe-perms` parameters:
+Install via the Homebridge UI, or manually in your Homebridge directory:
 
 ```shell
-npm install [-g|--unsafe-perms] homebridge-button-platform
+npm install homebridge-button-platform-22
 ```
-
-The `-g` option will install the plugin globally and the `--unsafe-perms` option
-is needed for some platforms to install successfully.
 
 ## Configuration
 
-The plugin can be configured via the [`homebridge-config-ui-x`](https://www.npmjs.com/package/homebridge-config-ui-x)
-admin interface.
-
-To configure the plugin manually, add the following configuration to the
-`platforms` block of your Homebridge `config.json` file:
+Configure via the Homebridge UI, or add this to the `platforms` block of
+`config.json`:
 
 ```json
-"platforms": [
-    {
-        "platform": "button-platform",
-        "port": 3001,
-        "buttons": [
-            "My Button",
-            "Your Button",
-            "Their Button"
-        ]
-    }
-  ]
+{
+  "platform": "button-platform",
+  "port": 3001,
+  "buttons": ["My Button", "Your Button"]
+}
 ```
 
-You can add as many buttons to the array as you need. Each button will get its
-own URI on which the server will listen for events. You can determine the URI
-for each button by checking the Homebridge logs for
-`The Event URI for <button name> is: /button-button-name` strings.
+Each button gets its own URI: `/button-` followed by the name in lower case with
+every character other than `a-z` and `0-9` replaced by `-`. For example,
+`My Button` becomes `/button-my-button`. The Homebridge log prints each URI at
+startup.
 
-> **Note:** renaming a button in `config.json` is the same as deleting the old
-button and adding a new one, i.e. any configuration will be lost.
+> **Note:** renaming a button is the same as deleting it and adding a new one;
+> any HomeKit automations attached to it are lost.
 
 ## Sending events
 
-To trigger a button event, send an HTTP `GET` request with a specific query
-string value or an HTTP `POST` request to your Homebridge hostname or IP address
-and the port specified in the configuration of the platform, plus the URI for the
-button.
+Send a request to `http://<homebridge>:<port>/<uri>` with an `event` value of:
 
-### Using a `GET` request
+| Event | HomeKit action |
+|:------|:---------------|
+| `click` or `single-press` | Single press |
+| `double-click` or `double-press` | Double press |
+| `hold` or `long-press` | Long press |
 
-The simplest method of triggering an event is to use a simple `GET` request with
-the query string parameter of `event` set to one of the valid event types:
-
-* `click` or `single-press`
-* `double-click` or `double-press`
-* `hold` or `long-press`
-
-For example, to send a single click event to a button using `curl`:
+The `event` value can come from the query string, the request body (JSON or
+form-encoded), or an `event` request header. Any HTTP method is accepted.
 
 ```shell
-$ curl http://<homebridge>:<port>/uri?event=click
-Success
+curl 'http://homebridge.local:3001/button-my-button?event=click'
+
+curl -X POST -H 'Content-Type: application/json' \
+  -d '{"event": "double-click"}' http://homebridge.local:3001/button-my-button
+
+curl -X POST -H 'Content-Type: application/x-www-form-urlencoded' \
+  -d 'event=hold' http://homebridge.local:3001/button-my-button
 ```
 
-You could also use this URL with a normal web browser.
+Responses: `200 OK` on success, `404` for an unknown URI, `422` for a missing or
+invalid event.
 
-### Example Flic button configuration
+### Stream Deck
 
-Here’s a screenshot of what an Internet Request action should look like in the
-Flic app if your Homebridge server is `homebridge.local` and the plugin
-was listening on port 3001:
-
-![flic-config](docs/flic-config.png)
-
-The values are as follows:
-
-| Field | Value |
-|:------|:------|
-| Hub Action | **Internet Request** |
-| URL | `http://homebridge.local:3001/button-name?event=click` |
-| Type | **GET** |
-
-### Battery level
-
-The plugin from v1.5 onwards automatically creates a
-battery service when it detects it's being triggered by a Flic button and will
-update the battery level with the current value from the Flic whenever the
-button is pushed.
-
-### Example Stream Deck configuration
-
-You can use the "Website" Stream Deck action to trigger an event. In the
-Stream Deck configuration, drag the "Website" action to a key and configure
-the URL to be `http://homebridge.local:3001/button-name?event=click` which uses the
-same parameters as the `GET` request above:
+Use the "Website" action with a URL such as
+`http://homebridge.local:3001/button-my-button?event=click` and enable
+`GET request in background` so no browser window opens:
 
 ![streamdeck-key](docs/streamdeck-config.png)
 
-> **Top tip:** If you enable the `GET request in background` option, a browser will
-> not open when you hit the key.
+### Flic (deprecated)
 
-## Using a `POST` request
+In the Flic app, add an **Internet Request** action with type **GET** and a URL
+such as `http://homebridge.local:3001/button-my-button?event=click`:
 
-If you use an HTTP `POST` request you must set the Content-Type header to either
-`application/json` or `application/x-www-form-urlencoded`. The body of the request
-needs a field named `event` with a value of one of the event types defined above.
+![flic-config](docs/flic-config.png)
 
-For example, to send a double press event to a button using `curl` with a JSON
-payload:
-
-```shell
-$ curl -X POST \
-  -H 'Content-Type: application/json' \
-  -d '{"event": "double-click"}' \
-  http://<homebridge>:<port>/<uri>
-```
-
-You can also `POST` with an `application/x-www-form-urlencoded` payload:
-
-```shell
-$ curl -X POST \
-  -H 'Content-Type: application/x-www-form-urlencoded' \
-  -d 'event=double-click' \
-  http://<homebridge>:<port>/<uri>
-```
-
-This is useful when used in with a larger form-based application.
+Flic hubs send a `button-battery-level` header (0 to 100), which updates the
+button's HomeKit battery service. Below 15% is reported as low battery. This
+is the deprecated part; see the note above.
 
 ## Troubleshooting
 
-Check the Homebridge logs for any warnings as the plugin will log any attempts
-to trigger an invalid event or any invalid URIs.
+The Homebridge log records every request to an unknown URI along with the
+sender's address, method and user agent.

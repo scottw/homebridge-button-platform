@@ -1,119 +1,76 @@
-import { Service, PlatformAccessory, CharacteristicValue } from 'homebridge';
-import { ButtonPlatform } from './platform';
+import { PlatformAccessory, Service } from 'homebridge';
+import type { ButtonPlatform } from './platform';
+
+const EVENT_TYPES = {
+  'click': 'SINGLE_PRESS',
+  'single-press': 'SINGLE_PRESS',
+  'double-click': 'DOUBLE_PRESS',
+  'double-press': 'DOUBLE_PRESS',
+  'hold': 'LONG_PRESS',
+  'long-press': 'LONG_PRESS',
+} as const;
+
+const LOW_BATTERY_LEVEL = 15;
+
+export type ButtonEvent = keyof typeof EVENT_TYPES;
+export const EVENT_NAMES = Object.keys(EVENT_TYPES) as ButtonEvent[];
+
+export function isButtonEvent(value: unknown): value is ButtonEvent {
+  return typeof value === 'string' && Object.hasOwn(EVENT_TYPES, value);
+}
 
 export class ButtonPlatformAccessory {
-  private switchService: Service;
-  private batteryService: Service;
-
+  private readonly switchService: Service;
+  private readonly batteryService: Service;
   private batteryLevel = 100;
 
   constructor(
     private readonly platform: ButtonPlatform,
-    private readonly accessory: PlatformAccessory,
+    accessory: PlatformAccessory,
+    public readonly name: string,
   ) {
-    // Set accessory information
-    this.accessory.getService(this.platform.Service.AccessoryInformation)!
-      .setCharacteristic(this.platform.Characteristic.Manufacturer, 'Homebridge')
-      .setCharacteristic(this.platform.Characteristic.Model, 'Virtual Button')
-      .setCharacteristic(this.platform.Characteristic.SerialNumber, this.accessory.UUID);
+    const { Service, Characteristic } = platform.api.hap;
 
-    // Setup Stateless Programmable Switch service
-    this.switchService = this.accessory.getService(this.platform.Service.StatelessProgrammableSwitch) ||
-      this.accessory.addService(this.platform.Service.StatelessProgrammableSwitch);
+    accessory.getService(Service.AccessoryInformation)!
+      .setCharacteristic(Characteristic.Manufacturer, 'Homebridge')
+      .setCharacteristic(Characteristic.Model, 'Virtual Button')
+      .setCharacteristic(Characteristic.SerialNumber, accessory.UUID);
 
-    this.switchService.setCharacteristic(
-      this.platform.Characteristic.Name,
-      accessory.context.device.name + ' Switch',
-    );
+    this.switchService = accessory.getService(Service.StatelessProgrammableSwitch) ??
+      accessory.addService(Service.StatelessProgrammableSwitch);
+    this.switchService.setCharacteristic(Characteristic.Name, `${name} Switch`);
 
-    // Setup Battery service (always created, updated when battery info received)
-    this.batteryService = this.accessory.getService(this.platform.Service.Battery) ||
-      this.accessory.addService(this.platform.Service.Battery);
-
-    this.batteryService.setCharacteristic(
-      this.platform.Characteristic.Name,
-      accessory.context.device.name + ' Battery',
-    );
-
-    this.batteryService
-      .getCharacteristic(this.platform.Characteristic.BatteryLevel)
-      .onGet(this.handleBatteryLevelGet.bind(this));
-
-    this.batteryService
-      .getCharacteristic(this.platform.Characteristic.StatusLowBattery)
-      .onGet(this.handleStatusLowBatteryGet.bind(this));
-
-    this.batteryService
-      .getCharacteristic(this.platform.Characteristic.ChargingState)
-      .onGet(() => this.platform.Characteristic.ChargingState.NOT_CHARGEABLE);
-
-    this.platform.log.debug('Finished initializing accessory:', accessory.displayName);
+    this.batteryService = accessory.getService(Service.Battery) ?? accessory.addService(Service.Battery);
+    this.batteryService.setCharacteristic(Characteristic.Name, `${name} Battery`);
+    this.batteryService.getCharacteristic(Characteristic.BatteryLevel).onGet(() => this.batteryLevel);
+    this.batteryService.getCharacteristic(Characteristic.StatusLowBattery).onGet(() => this.lowBatteryStatus());
+    this.batteryService.getCharacteristic(Characteristic.ChargingState)
+      .onGet(() => Characteristic.ChargingState.NOT_CHARGEABLE);
   }
 
-  triggerEvent(eventType: string, batteryLevel?: number) {
-    // Update battery if provided
+  trigger(event: ButtonEvent, batteryLevel?: number) {
     if (batteryLevel !== undefined) {
       this.updateBattery(batteryLevel);
     }
 
-    // Map event type to HomeKit constant
-    const C = this.platform.Characteristic.ProgrammableSwitchEvent;
-    let event: CharacteristicValue;
-
-    switch (eventType) {
-      case 'click':
-      case 'single-press':
-        event = C.SINGLE_PRESS;
-        break;
-      case 'double-click':
-      case 'double-press':
-        event = C.DOUBLE_PRESS;
-        break;
-      case 'hold':
-      case 'long-press':
-        event = C.LONG_PRESS;
-        break;
-      default:
-        this.platform.log.error('Unknown event type: %s', eventType);
-        return;
-    }
-
-    this.platform.log.debug('Button %s triggered: %s', this.accessory.displayName, eventType);
-
-    // Trigger the event
+    const { ProgrammableSwitchEvent } = this.platform.api.hap.Characteristic;
     this.switchService
-      .getCharacteristic(this.platform.Characteristic.ProgrammableSwitchEvent)
-      .sendEventNotification(event);
+      .getCharacteristic(ProgrammableSwitchEvent)
+      .sendEventNotification(ProgrammableSwitchEvent[EVENT_TYPES[event]]);
   }
 
   private updateBattery(level: number) {
-    const batteryLevel = Math.max(0, Math.min(100, Math.trunc(level)));
-    this.batteryLevel = batteryLevel;
-
-    this.batteryService
-      .getCharacteristic(this.platform.Characteristic.BatteryLevel)
-      .updateValue(batteryLevel);
-
-    const isLowBattery = batteryLevel < 15;
-    this.batteryService
-      .getCharacteristic(this.platform.Characteristic.StatusLowBattery)
-      .updateValue(
-        isLowBattery
-          ? this.platform.Characteristic.StatusLowBattery.BATTERY_LEVEL_LOW
-          : this.platform.Characteristic.StatusLowBattery.BATTERY_LEVEL_NORMAL,
-      );
-
-    this.platform.log.debug('Battery level for %s: %d%%', this.accessory.displayName, batteryLevel);
+    const { Characteristic } = this.platform.api.hap;
+    this.batteryLevel = Math.max(0, Math.min(100, Math.trunc(level)));
+    this.batteryService.updateCharacteristic(Characteristic.BatteryLevel, this.batteryLevel);
+    this.batteryService.updateCharacteristic(Characteristic.StatusLowBattery, this.lowBatteryStatus());
+    this.platform.log.debug('Battery level for %s: %d%%', this.name, this.batteryLevel);
   }
 
-  async handleBatteryLevelGet(): Promise<CharacteristicValue> {
-    return this.batteryLevel;
-  }
-
-  async handleStatusLowBatteryGet(): Promise<CharacteristicValue> {
-    const isLowBattery = this.batteryLevel < 15;
-    return isLowBattery
-      ? this.platform.Characteristic.StatusLowBattery.BATTERY_LEVEL_LOW
-      : this.platform.Characteristic.StatusLowBattery.BATTERY_LEVEL_NORMAL;
+  private lowBatteryStatus() {
+    const { StatusLowBattery } = this.platform.api.hap.Characteristic;
+    return this.batteryLevel < LOW_BATTERY_LEVEL
+      ? StatusLowBattery.BATTERY_LEVEL_LOW
+      : StatusLowBattery.BATTERY_LEVEL_NORMAL;
   }
 }

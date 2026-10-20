@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2.1.0 (unreleased)
+
+* Fixed: newly added buttons returned `404 Button not found` until Homebridge
+  was restarted.
+* Deprecated: Flic battery reporting via the `button-battery-level` header. It
+  logs a warning and will be removed after 2026-12-31. Flic 2 buttons on a Flic
+  Hub LR support HomeKit natively (<https://flic.io/homekit>).
+* Replaced `express`, `express-validator` and `helmet` with Node's built-in
+  `http` module. The plugin now has no runtime dependencies. URIs, events,
+  methods and status codes are unchanged; `422` error bodies are simpler.
+* An event value is now taken from the first valid source (query, body, then
+  header) instead of the first present one.
+* The HTTP server closes when Homebridge shuts down.
+* Supported Node.js versions now match Homebridge 2: 22, 24 and 26.
+* Removed the unused legacy `index.js`, the upstream publish workflow and other
+  unused config.
+
+## 2.0.1 (2026-01-24)
+
+* Log the source address, method and user agent of requests to unknown URIs.
+
+## 2.0.0 (2025-09-29)
+
+* Rewritten in TypeScript using current Homebridge plugin patterns, replacing
+  `homebridge-lib`. Published as `homebridge-button-platform-22`.
+
 ## 1.5.1 (2021-12-09)
 
 * The battery is now set to 100% whenever Homebridge starts and will only

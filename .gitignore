@@ -1,36 +1,8 @@
-# Build output
 dist/
-*.tsbuildinfo
-
-# Dependencies
 node_modules/
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Logs
+*.tgz
 *.log
-npm-debug.log*
+.DS_Store
 
-# Testing
-coverage/
-.nyc_output/
-
-# Homebridge test config
-test/hbConfig/
-
-# npm
-.npm
-
-# Old ESLint config (using new flat config)
-.eslintrc
-.eslintrc.js
-.eslintrc.json
+src/test/hbConfig/*
+!src/test/hbConfig/config.json
