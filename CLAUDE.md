@@ -57,6 +57,9 @@ Removal checklist (next major, 3.0.0):
 - `npm run dev`: builds, then runs a local Homebridge with this plugin on port 3001.
   Test with `curl 'http://localhost:3001/button-test-button?event=click'`.
 - Node engines follow Homebridge 2 (22, 24, 26).
+- Production Homebridge is `ssh homebridge` (storage `/var/lib/homebridge`). Its buttons drive
+  real automations, so verify there with an invalid event (expect 422), never a real one.
+- Release steps are in `DEVELOP.md`.
 
 ## Conventions
 
